@@ -231,14 +231,30 @@ jobs:
       - run: cd src-ui && npm run test
       - run: cd src-ui && npm run e2e:ci
 
+  ci-optional:
+    name: Optional CI Steps
+    needs:
+      - documentation
+      - tests-backend
+      - tests-frontend
+    if: |
+      always() &&
+      (needs.documentation.result == 'success' || needs.documentation.result == 'skipped') &&
+      (needs.tests-backend.result == 'success' || needs.tests-backend.result == 'skipped') &&
+      (needs.tests-frontend.result == 'success' || needs.tests-frontend.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          OPTIONAL_RESULT: true
+        run: echo "$OPTIONAL_RESULT"
+
+
   prepare-docker-build:
     name: Prepare Docker Pipeline Data
     if: github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/feature-') || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/beta' || contains(github.ref, 'beta.rc') || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-22.04
     needs:
-      - documentation
-      - tests-backend
-      - tests-frontend
+      - ci-optional
     steps:
       -
         name: Set ghcr repository name
